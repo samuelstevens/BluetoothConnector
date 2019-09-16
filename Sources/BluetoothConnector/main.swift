@@ -15,6 +15,8 @@ func printHelp() {
 
 func printAndNotify(_ content: String, notify: Bool) {
     if (notify) {
+        // we send notifications via osascript, and so it doesn't let us change the output
+        // if we turn off notify, and pipe the content to the applescript, we could be fine
         Process.launchedProcess(launchPath: "/usr/bin/osascript", arguments: ["-e", "display notification \"\(content)\" with title \"BluetoothConnector\""])
     }
 
@@ -52,6 +54,7 @@ let cliParser = SimpleCLI(configuration: [
     Argument(longName: "status", shortName: "s", type: .keyOnly, defaultValue: "false"),
     Argument(longName: "address", type: .valueOnly, obligatory: true, inputName: "00-00-00-00-00-00"),
     Argument(longName: "notify", shortName: "n", type: .keyOnly, defaultValue: "false"),
+    Argument(longName: "print", shortName: "p", type: .keyOnly, defaultValue: "false"),
     ])
 let dictionary = cliParser.parseArgs(CommandLine.arguments)
 
@@ -63,6 +66,11 @@ guard let deviceAddress = dictionary["address"] else {
 var notify = false
 if let notifyString = dictionary["notify"] {
     notify = Bool(notifyString) ?? false
+}
+
+var shouldPrint = false
+if let printString = dictionary["print"] {
+    shouldPrint = Bool(printString) ?? false
 }
 
 guard let bluetoothDevice = IOBluetoothDevice(addressString: deviceAddress) else {
@@ -127,7 +135,7 @@ else {
 if error > 0 {
     printAndNotify("Error: \(action) failed", notify: notify)
     exit(-1)
-} else if notify {
+} else if shouldPrint {
     if action == .Connection && alreadyConnected {
         printAndNotify("Already connected", notify: notify)
     }
